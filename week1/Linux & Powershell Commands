@@ -1,0 +1,128 @@
+script-1
+#!/bin/bash
+get_ram_usage(){
+    free | grep Mem | awk '{print $3/$2 * 100.0}'
+}
+ram_usage=$(get_ram_usage)
+ram_usage_int=${ram_usage%.*}
+
+if [ $ram_usage_int -gt 80 ]; then
+    echo "RAM usage is high: ${ram_usage}%"
+else
+    echo "RAM usage is normal: ${ram_usage}%"
+fi
+
+script-2
+#!/bin/bash
+get_process_info() {
+    local process_name=$1
+    pid=$(pgrep -x "$process_name")
+
+    if [ -z "$pid" ]; then
+        echo "Process '$process_name' is not running."
+    else
+        mem_usage=$(pmap -x "$pid" | awk '/total kB/{print $3}')
+        mem_usage_human=$(numfmt --to=iec --suffix=B --padding=7 $((mem_usage * 1024)))
+        echo "Process ID: $pid"
+        echo "Current Memory Usage: $mem_usage_human"
+    fi
+}
+
+read -p "Enter the process name: " process_name
+get_process_info "$process_name"
+
+script-3
+ #!/bin/bash
+load_averages=$(uptime | awk -F'[a-z]:' '{ print $2 }')
+load_1min=$(echo $load_averages | awk '{ print $1 }')
+load_5min=$(echo $load_averages | awk '{ print $2 }')
+load_15min=$(echo $load_averages | awk '{ print $3 }')
+cpu_utilization=$(top -bn1 | grep "Cpu(s)" | sed "s/., *\([0-9.]\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
+disk_usage=$(df -h --total | grep 'total' | awk '{ print $5 }')
+memory_utilization=$(free | grep Mem | awk '{print $3/$2 * 100.0}')
+echo "CPU Load Averages: "
+echo "Last 1 minute: $load_1min"
+echo "Last 5 minutes: $load_5min"
+echo "Last 15 minutes: $load_15min"
+echo "Current CPU Utilization: $cpu_utilization"
+echo "Disk Usage: $disk_usage"
+echo "Memory Utilization: $(printf "%.2f" $memory_utilization)%"
+
+script-4
+#!/bin/bash
+user_exists() {
+    id "$1" &>/dev/null
+}
+password_set() {
+    local username="$1"
+    grep "^$username:" /etc/shadow | cut -d: -f2 | grep -q '^[^!]'
+}
+
+read -p "Enter the username: " username
+if user_exists "$username"; then
+    echo "User '$username' already exists."
+    if password_set "$username"; then
+        echo "Password is set for user '$username'."
+    else
+        echo "No password is set for user '$username'."
+    fi
+else
+    sudo useradd "$username"
+    echo "User '$username' created."
+    echo "Please set a password for the new user:"
+    sudo passwd "$username"
+fi
+
+script-5
+#!/bin/bash
+# Set the directory to search
+DIRECTORY="/path/to/student"  
+PATTERN="specific_pattern"      
+cd "$DIRECTORY" || { echo "Directory not found!"; exit 1; }
+# Find files matching the pattern
+for FILE in "$PATTERN"; do
+    if [ -f "$FILE" ]; then
+        FILESIZE=$(stat -c%s "$FILE")
+        # Check if file size is greater than 100 MB (100 * 1024 * 1024 bytes)
+        if [ "$FILESIZE" -gt $((100 * 1024 * 1024)) ]; then
+            TARFILE="$FILE.tar.gz"
+            # Compress the file
+            tar -czf "$TARFILE" "$FILE"
+            # Check if tar was successful before deleting the original file
+            if [ $? -eq 0 ]; then
+                # Delete the original file
+                rm "$FILE"
+                # Create an empty file with the same name
+                touch "$FILE"
+                echo "Compressed and replaced: $FILE"
+            else
+                echo "Failed to compress: $FILE"
+            fi
+        fi
+    fi
+done
+
+script-6
+Write-Host "Enter process name"
+$processName = Read-Host
+$process = Get-Process -Name $processName
+if ($process) {
+    foreach ($p in $process) {
+        Write-Host "Process ID: $($p.Id)"
+        Write-Host "Working Set: $($p.WorkingSet64 / 1MB) MB"
+        Write-Host "Private Memory: $($p.PrivateMemory64 / 1MB) MB"
+        Write-Host "---"
+    }
+} else {
+    Write-Host "Process $processName is not running"
+}
+
+script-7
+$sourceDir = "C:\Downloads"  
+$backupDir = "$sourceDir\backup"   
+if (-not (Test-Path $backupDir)) { New-Item -Path $backupDir -ItemType Directory }
+#$currentDate = Get-Date
+Get-ChildItem -Path $sourceDir -File | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) } | ForEach-Object {
+    Move-Item -Path $_.FullName -Destination $backupDir
+    Write-Output "Moved file: $($_.FullName)"
+}
